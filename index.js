@@ -9,34 +9,36 @@ mongoose.promise = global.promise
 let app = express()
 
 app.use(body_parser.json())
-app.use(body_parser.urlencoded({extended: false}))
+app.use(body_parser.urlencoded({
+  extended: false
+}))
 
-let port = 9000   // creating the port
+let port = 9000 // creating the port
 app.listen(port, () => {
-  console.log(`listening to port ${port}` )
+  console.log(`listening to port ${port}`)
 })
 
 // creating a mongodb connection
-const url = "mongodb://localhost:27018/user"
+const url = "mongodb://localhost:27017/user"
 
 mongoose.connect(url, {
   useNewUrlParser: true,
-  useUnifiedTopology:true
+  useUnifiedTopology: true
 })
 
 //creating a mongodb schema
 let user = mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
-  firstName:{
+  firstName: {
     type: String,
     requred: true,
 
   },
-  lastName:{
+  lastName: {
     type: String,
     requred: true
   },
-  age:{
+  age: {
     type: Number,
     requred: true
   },
@@ -52,165 +54,186 @@ let user = mongoose.Schema({
 // adding schema as a mongoose model
 let users = mongoose.model("user", user)
 
+// new users({
+//   _id: new mongoose.Types.ObjectId,
+//   firstName: "Asante",
+//   lastName: "Emmanuel",
+//   age: 90,
+//   password: "emma2001",
+//   email: "emmaasante854@gmail.com"
+// })
+// .save()
+// .then(data => console.log(data))
 
 //user signin and authentication
-app.post("/signin", (req,res,next) => {
-  users.findOne({email: req.body.email})
-  .exec()
-  .then(user => {
-    if(user){
-      bcrypt.compare(req.body.password, user.password, (err, hashed) => {
-        if(hashed){
-          return res.json({res: "Authentication successful"})
-        }
-        else{
-          return res.json({res: "Authentication failed"})
-        }
-      })
-    }
-    else{
-      return res.json({res: "wrong email or password"})
-    }
-  })
-  .catch(error => {
-    console.log(error)
-  })
+app.post("/signin", (req, res, next) => {
+  users.findOne({
+      email: req.body.email
+    })
+    .exec()
+    .then(user => {
+      if (user) {
+        bcrypt.compare(req.body.password, user.password, (err, hashed) => {
+          if (hashed) {
+            return res.json({
+              res: "Authentication successful"
+            })
+          } else {
+            return res.json({
+              res: "Authentication failed"
+            })
+          }
+        })
+      } else {
+        return res.json({
+          res: "wrong email or password"
+        })
+      }
+    })
+    .catch(error => {
+      console.log(error)
+    })
 })
 
 // user signup
-app.post("/signup", (req,res,next) => {
-  users.findOne({email: req.body.email})
-  .exec()
-  .then(user => {
-    if(user){
-      return res.json({res: "email already exist"})
-    }
-    else{
+app.post("/signup", (req, res, next) => {
+  users.findOne({
+      email: req.body.email
+    })
+    .exec()
+    .then(user => {
+      if (user) {
+        return res.json({
+          res: "email already exist"
+        })
+      } else {
 
-      if(validator.isInt(req.body.age) && validator.isEmail(req.body.email)){
-        bcrypt.hash(req.body.password,10, (err,hash) => {
-          if(err){
-            console.log(err)
-          }
-          let age = req.body.age
-          let email = req.body.email
-          let new_user = new users({
-            _id: new mongoose.Types.ObjectId,
-            firstName: req.body.firstName,
-            lastName: req.body.lastName,
-            age: age,
-            email: email,
-            password: hash
-          })
-    
-          new_user
-          .save()
-          .then(data => {
-            if(data){
-              return res.json({res: "user account created successfully", data: data})
+        if (validator.isInt(req.body.age) && validator.isEmail(req.body.email)) {
+          bcrypt.hash(req.body.password, 10, (err, hash) => {
+            if (err) {
+              console.log(err)
             }
+            let age = req.body.age
+            let email = req.body.email
+            let new_user = new users({
+              _id: new mongoose.Types.ObjectId,
+              firstName: req.body.firstName,
+              lastName: req.body.lastName,
+              age: age,
+              email: email,
+              password: hash
+            })
+
+            new_user
+              .save()
+              .then(data => {
+                if (data) {
+                  return res.json({
+                    res: "user account created successfully",
+                    data: data
+                  })
+                }
+              })
+              .catch(error => {
+                console.log(error)
+              })
           })
-          .catch(error => {
-            console.log(error)
+
+        } else {
+          return res.json({
+            res: "invalid data input for email or age"
           })
-          })
-        
+        }
+
       }
-      else{
-        return res.json({res: "invalid data input for email or age"})
-      }
-      
-    }
-  })
-  .catch(error => {
-    console.log(error)
-  })
+    })
+    .catch(error => {
+      console.log(error)
+    })
 })
 
 //send response to user if user details exists
 
-app.get("/users", (req,res,next)=>{
+app.get("/users", (req, res, next) => {
 
   let data = users.find({})
-  .exec()
-  .then(data => {
-    console.log(data);
-    res.json({
-      data: data
+    .exec()
+    .then(data => {
+      console.log(data);
+      res.json({
+        data: data
+      })
+    }).catch(error => {
+      console.log(error);
     })
-  }).catch(error => {
-    console.log(error);
-  })
 
 })
 
 //Checking if user exists on the database
 
-app.post("/find_user", (req,res,next) =>{
+app.post("/find_user", (req, res, next) => {
   //use promise to find a user on the database
 
   //getting firstName from user and search database based on firstName
- let firstName = req.body.firstName
+  let firstName = req.body.firstName
 
-  users.findOne({firstName: firstName})
-  .exec()
-  .then(user => {
-    //if user found based on firstName then send response to user
-    if(user) return res.json({res: "user found",data: user});
-     return res.json({res: "user does not exist"})
-  }).catch(error =>{
-    console.log(error);
-  })
+  users.findOne({
+      firstName: firstName
+    })
+    .exec()
+    .then(user => {
+      //if user found based on firstName then send response to user
+      if (user) return res.json({
+        res: "user found",
+        data: user
+      });
+      return res.json({
+        res: "user does not exist"
+      })
+    }).catch(error => {
+      console.log(error);
+    })
 })
 
 
-let names = [ {name: "kofi"}, {name: "ama"},{name: "kwame"}]
+let names = [{
+  name: "kofi"
+}, {
+  name: "ama"
+}, {
+  name: "kwame"
+}]
 
-let firstPage = (request, response,next) =>{
+let firstPage = (request, response, next) => {
 
   let name = request.body.name
-   names.forEach(function(x) {
-    if(name === x.name){
+  names.forEach(function(x) {
+    if (name === x.name) {
       console.log(name);
 
       next()
     }
-    response.json({response: "name not found"})
+    response.json({
+      response: "name not found"
+    })
 
- })
+  })
 
 }
-let next_page = (req,res) => {
+let next_page = (req, res) => {
 
-  res.json({res: "this is the next page"})
+  res.json({
+    res: "this is the next page"
+  })
 }
 
-app.get("/home",(request, response, next) => {
-      response.json({ response: 'This is our first lecture'})
+app.get("/home", (request, response, next) => {
+  response.json({
+    response: 'This is our first lecture'
+  })
 })
 
-app.get("/",firstPage,next_page )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+app.get("/", firstPage, next_page)
 
 
 
@@ -246,29 +269,6 @@ app.get("/",firstPage,next_page )
 // app.listen(port, () => {
 //     console.log(`listening to port ${port}`)
 // })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 module.exports = app
