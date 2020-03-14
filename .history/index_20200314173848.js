@@ -233,8 +233,8 @@ app.get("/home", (request, response, next) => {
   })
 })
 
-app.get("/", (req,res,next) => {
-  res.sendFile(path.join(__dirname + "/user_signup.html"))
+app.get("/", () => {
+  res.send
 })
 
 
